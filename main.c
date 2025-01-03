@@ -1,11 +1,16 @@
 #include "ani_lang.h"
+#include "error_message.h"
 
 Token *token;
 char *user_input;
 
 int main(int argc, char **argv) {
+    error_message = calloc(1, sizeof(ErrorMessage));
+    error_message->type = NORMAL;
+
     if (argc != 2) {
-    fprintf(stderr, "引数の個数が正しくありません\n");
+    error_message->state = NumArgumentError;
+    fprintf(stderr, "%s\n", error_message_to_string(error_message));
     return 1;
   }
 

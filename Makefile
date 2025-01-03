@@ -5,7 +5,7 @@ OBJS=$(SRCS:.c=.o)
 ani_lang: $(OBJS)
 	$(CC) -o ani_lang $(OBJS) $(LDFLAGS)
 
-$(OBJS): ani_lang.h		
+$(OBJS): ani_lang.h	error_message.h
 
 test: ani_lang
 	./test.sh

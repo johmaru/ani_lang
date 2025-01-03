@@ -1,4 +1,24 @@
 #include "ani_lang.h"
+#include "error_message.h"
+
+
+typedef struct LVar LVar;
+
+struct LVar {
+    LVar *next;
+    char *name;
+    int len;
+    int offset;
+};
+
+LVar *locals;
+
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next)
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+      return var;
+  return NULL;
+}
 
 
 
@@ -18,12 +38,25 @@ Node *new_node_num(int val) {
 }
 
 Node *stmt() {
-    Node *node = expr();
-    expect(";");
+    Node *node;
+     if (consume_token(TK_RETURN)) {
+       node = calloc(1, sizeof(Node));
+         node->kind = ND_RETURN;
+            node->lhs = expr();
+    } else {
+        node = expr();
+    }
+
+    if (!consume(";")) {
+        error_message->state = NotSemiColonError;
+        error_at(token->str, "%s", error_message_to_string(error_message));
+    }
     return node;
     }
 
 void program() {
+    locals = calloc(1, sizeof(LVar));
+    locals->offset = 0;
     int i = 0;
     while (!at_eof()) {
         code[i++] = stmt();
@@ -125,7 +158,19 @@ Node *primary() {
     if (tok) {
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_LVAR;
-        node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+        LVar *lvar = find_lvar(tok);
+        if (lvar) {
+            node->offset = lvar->offset;
+        } else {
+            lvar = calloc(1, sizeof(LVar));
+            lvar->next = locals;
+            lvar->name = tok->str;
+            lvar->len = tok->len;
+            lvar->offset = locals->offset + 8;
+            node->offset = lvar->offset;
+            locals = lvar;
+        }
         return node;
     }
 
@@ -164,6 +209,13 @@ void error(char *fmt, ...) {
     exit(1);
 }
 
+bool consume_token(TokenKind kind) {
+    if (token->kind != kind)
+        return false;
+    token = token->next;
+    return true;
+}
+
 bool consume(char *op) {
     if (token->kind != TK_RESERVED || 
         strlen(op) != token->len ||
@@ -178,14 +230,16 @@ void expect(char *op) {
     if (token->kind != TK_RESERVED || 
         strlen(op) != token->len || 
         memcmp(token->str, op, token->len)) {
-        error_at(token->str, "'%s'ではありません", op);
+        error_message->state = NotMachError;    
+        error_at(token->str, "'%s'%s", op, error_message_to_string(error_message));
     }
     token = token->next;
 }
 
 int expect_number() {
     if (token->kind != TK_NUM) {
-        error_at(token->str, "数ではありません");
+        error_message->state = NotNumError;
+        error_at(token->str, "%s", error_message_to_string(error_message));
     }
     int val = token->val;
     token = token->next;
@@ -207,6 +261,15 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 
 bool startswith(char *p, char *q) {
     return memcmp(p, q, strlen(q)) == 0;
+}
+
+bool is_keyword(char *p,const char *keyword) {
+    int byte_len = strlen(keyword);
+    if(strncmp(p, keyword, byte_len) == 0) {
+        unsigned char next = p[byte_len];
+        return !(isalnum(next) || next == 0x80);
+    }
+    return false;
 }
 
 Token *tokenize(char *p) {
@@ -235,6 +298,13 @@ Token *tokenize(char *p) {
             continue;
          }
 
+         if (is_keyword(p, "かえす")) {
+            int len = strlen("かえす");
+            cur = new_token(TK_RETURN, cur, p, len);
+            p += len;
+            continue;
+         }
+
          if ('a' <= *p && *p <= 'z') {
              cur = new_token(TK_IDENT, cur, p++, 1);
              continue;
@@ -244,8 +314,8 @@ Token *tokenize(char *p) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
             }
-
-            error("トークナイズできません");
+            error_message->state = FailTokenizeError;
+            error("%s", error_message_to_string(error_message));
     }
 
     new_token(TK_EOF, cur, p,0);

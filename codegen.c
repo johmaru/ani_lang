@@ -1,8 +1,10 @@
 #include "ani_lang.h"
+#include "error_message.h"
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
-        error("代入の左辺値が変数ではありません");
+        error_message->state = NotLvarIsVariableError;
+        error("%s", error_message_to_string(error_message));
     }
 
     printf("  mov rax, rbp\n");
@@ -11,6 +13,15 @@ void gen_lval(Node *node) {
 }
 
 void gen(Node *node){
+
+    if (node->kind == ND_RETURN) {
+        gen(node->lhs);
+        printf("  pop rax\n");
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
+    }
 
     switch (node->kind)
     {
