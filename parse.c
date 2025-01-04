@@ -30,6 +30,15 @@ Node *new_node(NodeKind kind,Node *lhs, Node *rhs) {
     return node;
 }
 
+Node *new_node_if(Node *cond, Node *then, Node *els) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_IF;
+    node->cond = cond;
+    node->then = then;
+    node->els = els;
+    return node;
+}
+
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_NUM;
@@ -39,6 +48,17 @@ Node *new_node_num(int val) {
 
 Node *stmt() {
     Node *node;
+    if (consume_token(TK_IF)) {
+        expect("(");
+        Node *cond = expr();
+        expect(")");
+
+        Node *then = stmt();
+
+        Node *els = consume_token(TK_ELSE) ? stmt() : NULL;
+        return new_node_if(cond, then, els);
+    }
+
      if (consume_token(TK_RETURN)) {
        node = calloc(1, sizeof(Node));
          node->kind = ND_RETURN;
@@ -256,6 +276,10 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     tok->str = str;
     tok->len = len;
     cur->next = tok;
+    fprintf(stderr, "新しいトークン: ");
+    fprintf(stderr, "種類=%d, ", kind);
+    fprintf(stderr, "文字列=\"%.*s\", ", len, str);
+    fprintf(stderr, "長さ=%d\n", len);
     return tok;
 }
 
@@ -285,12 +309,20 @@ Token *tokenize(char *p) {
        }
 
        if (isdigit(*p)) {
-                cur = new_token(TK_NUM, cur, p, 0);
-                char *q = p;
-                cur->val = strtol(p, &p, 10);
-                cur->len = p - q;
-                continue;
-            }
+            char *q = p;
+            int val = strtol(p, &p, 10);
+            cur = new_token(TK_NUM, cur, q, p - q);
+            cur->val = val;
+            continue;
+        }
+
+
+        if (is_keyword(p, "もし")) {
+            int len = strlen("もし");
+            cur = new_token(TK_IF, cur, p, len);
+            p += len;
+            continue;
+        }    
 
          if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
             cur = new_token(TK_RESERVED, cur, p, 2);

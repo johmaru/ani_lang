@@ -44,4 +44,5 @@ assert 1 '1>=0;'
 assert 1 '1>=1;'
 assert 0 '1>=2;'
 assert 3 "かえす 3;"
+assert 5 "a=1; もし (a == 1) 5;"
 echo OK

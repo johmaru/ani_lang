@@ -12,7 +12,25 @@ void gen_lval(Node *node) {
     printf("  push rax\n");
 }
 
+static int labelseq = 0;
 void gen(Node *node){
+
+     if (node->kind == ND_IF) {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+
+        int seq = labelseq++;
+        printf("  je .Lelse%d\n", seq);
+        gen(node->then);
+        printf("  jmp .Lend%d\n", seq);
+        printf(".Lelse%d:\n", seq);
+        if (node->els) {
+            gen(node->els);
+        }
+        printf(".Lend%d:\n", seq);
+        return;
+    }
 
     if (node->kind == ND_RETURN) {
         gen(node->lhs);
@@ -22,6 +40,7 @@ void gen(Node *node){
         printf("  ret\n");
         return;
     }
+
 
     switch (node->kind)
     {
