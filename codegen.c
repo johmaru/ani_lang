@@ -14,7 +14,7 @@ void gen_lval(Node *node) {
 
 static int labelseq = 0;
 void gen(Node *node){
-
+fprintf(stderr, "生成中のノード: kind=%d\n", node->kind);
      if (node->kind == ND_IF) {
         gen(node->cond);
         printf("  pop rax\n");
@@ -32,12 +32,76 @@ void gen(Node *node){
         return;
     }
 
+    if (node->kind == ND_WHILE) {
+        int seq = labelseq++;
+        printf(".Lbegin%d:\n", seq);
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%d\n", seq);
+        gen(node->then);
+        printf("  jmp .Lbegin%d\n", seq);
+        printf(".Lend%d:\n", seq);
+        return;
+    }
+
+    if (node->kind == ND_FOR) {
+    int seq = labelseq++;
+    
+    if (node->init) {
+        gen(node->init);
+        printf("  pop rax\n");
+    }
+    
+    printf(".Lbegin%d:\n", seq);
+    
+    if (node->cond) {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%d\n", seq);
+    }
+    
+    if (node->body) {
+        gen(node->body);
+    }
+    
+    if (node->inc) {
+        gen(node->inc);
+        printf("  pop rax\n");
+    }
+    
+    printf("  jmp .Lbegin%d\n", seq);
+    printf(".Lend%d:\n", seq);
+    return;
+}
+
+    if (node->kind == ND_BLOCK){
+        for (int i = 0; i < node->stmts->len; i++) {
+            gen(vec_get(node->stmts, i));
+            if (i < node->stmts->len - 1) {
+                printf("  pop rax\n"); 
+            }
+        }
+        return;
+    }
+
     if (node->kind == ND_RETURN) {
         gen(node->lhs);
         printf("  pop rax\n");
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
+        return;
+    }
+
+    if (node->kind == ND_INC) {
+        gen_lval(node->lhs);
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  add rdi, 1\n");
+        printf("  mov [rax], rdi\n");
+        printf("  push rdi\n");
         return;
     }
 

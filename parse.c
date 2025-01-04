@@ -2,6 +2,31 @@
 #include "error_message.h"
 
 
+Vector *new_vector() {
+    Vector *vec = malloc(sizeof(Vector));
+    vec->data = malloc(sizeof(void *) * 16);
+    vec->capacity = 16;
+    vec->len = 0;
+    return vec;
+}
+
+void vec_push(Vector *vec, void *elem) {
+    if (vec->len == vec->capacity) {
+        vec->capacity *= 2;
+        vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
+    }
+    vec->data[vec->len++] = elem;
+}
+
+void *vec_get(Vector *vec, int i) {
+    return vec->data[i];
+}
+
+void vec_free(Vector *vec) {
+    free(vec->data);
+    free(vec);
+}
+
 typedef struct LVar LVar;
 
 struct LVar {
@@ -39,6 +64,24 @@ Node *new_node_if(Node *cond, Node *then, Node *els) {
     return node;
 }
 
+Node *new_node_while(Node *cond, Node *then) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_WHILE;
+    node->cond = cond;
+    node->then = then;
+    return node;
+}
+
+Node *new_node_for(Node *init, Node *cond, Node *inc, Node *then) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_FOR;
+    node->lhs = init;
+    node->cond = cond;
+    node->rhs = inc;
+    node->then = then;
+    return node;
+}
+
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_NUM;
@@ -48,6 +91,19 @@ Node *new_node_num(int val) {
 
 Node *stmt() {
     Node *node;
+    if (consume("{")) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_BLOCK;
+        node->stmts = new_vector();
+        
+        Node *cur = node;
+        while (!consume("}")) {
+           Node *stmt_node = stmt();
+           vec_push(node->stmts, stmt_node);
+        }
+        return node;
+    }
+
     if (consume_token(TK_IF)) {
         expect("(");
         Node *cond = expr();
@@ -58,11 +114,39 @@ Node *stmt() {
         Node *els = consume_token(TK_ELSE) ? stmt() : NULL;
         return new_node_if(cond, then, els);
     }
+    
+    if (consume_token(TK_WHILE)) {
+        expect("(");
+        Node *cond = expr();
+        expect(")");
+        Node *then = stmt();
+        return new_node_while(cond, then);
+    }
 
-     if (consume_token(TK_RETURN)) {
-       node = calloc(1, sizeof(Node));
-         node->kind = ND_RETURN;
-            node->lhs = expr();
+    if (consume_token(TK_FOR)) {  
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_FOR;
+        
+        expect("(");
+        node->init = expr();     
+        expect(";");
+        node->cond = expr();      
+        expect(";");
+        node->inc = expr();       
+        expect(")");
+        node->body = stmt(); 
+        
+        return node;
+    }
+    
+    if (consume_token(TK_RETURN)) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+    } else if (consume_token(TK_INC)) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_INC;
+        node->lhs = expr();
     } else {
         node = expr();
     }
@@ -159,6 +243,12 @@ Node *mul() {
 }
 
 Node *unary() {
+    if (consume_token(TK_INC)) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_INC;
+        node->lhs = expr();
+        return node;
+    }
     if (consume("+")) 
         return primary();
     if (consume("-"))
@@ -322,7 +412,33 @@ Token *tokenize(char *p) {
             cur = new_token(TK_IF, cur, p, len);
             p += len;
             continue;
-        }    
+        }
+
+        if (is_keyword(p, "ずっとループ")) {
+            int len = strlen("ずっとループ");
+            cur = new_token(TK_WHILE, cur, p, len);
+            p += len;
+            continue;
+        }
+
+        if (is_keyword(p, "くりかえし")) {
+            int len = strlen("くりかえし");
+            cur = new_token(TK_FOR, cur, p, len);
+            p += len;
+            continue;
+        }     
+
+        if (startswith(p, "{") || startswith(p, "}")) {
+            cur = new_token(TK_BLOCK, cur, p++, 1);
+            continue;
+            }
+
+        if (strncmp(p, "++", 2) == 0) {
+            cur = new_token(TK_INC, cur, p, 2);
+            p += 2;
+            continue;
+        }
+           
 
          if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
             cur = new_token(TK_RESERVED, cur, p, 2);

@@ -45,4 +45,7 @@ assert 1 '1>=1;'
 assert 0 '1>=2;'
 assert 3 "かえす 3;"
 assert 5 "a=1; もし (a == 1) 5;"
+assert 2 "a=1; ++a; かえす a;"
+assert 10 "くりかえし(a=0;a<10;++a) a; かえす a;"
+assert 50 "a=0; ずっとループ(a<50)++a; かえす a;"
 echo OK
