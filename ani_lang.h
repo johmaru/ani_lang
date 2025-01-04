@@ -5,6 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    void **data;
+    int capacity;
+    int len;
+} Vector;
+
+Vector *new_vector();
+void vec_push(Vector *vec, void *elem);
+void *vec_get(Vector *vec, int i);
+void vec_free(Vector *vec);
+
 typedef enum {
     TK_RESERVED,
     TK_IDENT,
@@ -13,6 +24,10 @@ typedef enum {
     TK_RETURN,
     TK_IF,
     TK_ELSE,
+    TK_WHILE,
+    TK_FOR,
+    TK_BLOCK,
+    TK_INC,
 } TokenKind;
 
 typedef enum {
@@ -30,6 +45,10 @@ typedef enum {
     ND_RETURN,
     ND_IF,
     ND_ELSE,
+    ND_WHILE,
+    ND_FOR,
+    ND_BLOCK,
+    ND_INC,
 
 } NodeKind;
 
@@ -44,6 +63,11 @@ struct Node {
     Node *cond;
     Node *then;
     Node *els;
+    Node *init;
+    Node *inc;
+    Node *body;
+    Node *next;
+    Vector *stmts;
 };
 
 typedef struct Token Token;
