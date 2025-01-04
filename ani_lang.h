@@ -26,7 +26,8 @@ typedef enum {
     TK_ELSE,
     TK_WHILE,
     TK_FOR,
-    TK_BLOCK,
+    TK_LBRANCE,
+    TK_RBRANCE,
     TK_INC,
 } TokenKind;
 
@@ -106,4 +107,5 @@ void program();
 bool at_eof();
 Token *consume_ident();
 bool consume_token(TokenKind kind);
+void debug_value(int value);
 

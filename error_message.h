@@ -12,6 +12,7 @@ typedef enum {
     NotNumError,
     FailTokenizeError,
     NotLvarIsVariableError,
+    NotRbranceError,
 } ErrorState;
 
 typedef struct ErrorMessage {

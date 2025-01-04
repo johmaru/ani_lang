@@ -30,7 +30,11 @@ char* error_message_to_string(ErrorMessage *error_message) {
 
             case NotLvarIsVariableError:
                 return "左の値が変数の形じゃないみたい";    
-                break;          
+                break; 
+
+            case NotRbranceError:
+                return "右の括弧がないわ";
+                break;             
             
             default:
                return "エラーがおきたみたい";

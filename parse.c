@@ -72,13 +72,13 @@ Node *new_node_while(Node *cond, Node *then) {
     return node;
 }
 
-Node *new_node_for(Node *init, Node *cond, Node *inc, Node *then) {
+Node *new_node_for(Node *init, Node *cond, Node *inc, Node *body) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_FOR;
     node->lhs = init;
     node->cond = cond;
     node->rhs = inc;
-    node->then = then;
+    node->body = body;
     return node;
 }
 
@@ -91,26 +91,41 @@ Node *new_node_num(int val) {
 
 Node *stmt() {
     Node *node;
-    if (consume("{")) {
+    if (token->kind == TK_LBRANCE){
+        fprintf(stderr, "TK_LBRANCE\n");
+        token = token->next;
         node = calloc(1, sizeof(Node));
         node->kind = ND_BLOCK;
         node->stmts = new_vector();
-        
-        Node *cur = node;
-        while (!consume("}")) {
-           Node *stmt_node = stmt();
-           vec_push(node->stmts, stmt_node);
+        while (token->kind != TK_RBRANCE) {
+            if (token->kind == TK_IDENT) {
+                Node *stmt_node = expr();
+                expect(";");
+                vec_push(node->stmts, stmt_node);
+                continue;
+            }
+
+             if (token->kind == TK_EOF) {
+                error_message->state = NotRbranceError;
+                error_at(token->str, "%s", error_message_to_string(error_message));
+                break;
+            }
+
+            Node *stmt_node = stmt();
+            vec_push(node->stmts, stmt_node);
         }
+        fprintf(stderr, "TK_RBRANCE\n");
+        token = token->next;
         return node;
     }
 
     if (consume_token(TK_IF)) {
+       
         expect("(");
         Node *cond = expr();
         expect(")");
 
         Node *then = stmt();
-
         Node *els = consume_token(TK_ELSE) ? stmt() : NULL;
         return new_node_if(cond, then, els);
     }
@@ -128,17 +143,25 @@ Node *stmt() {
         node->kind = ND_FOR;
         
         expect("(");
-        node->init = expr();     
+       if (!consume(";")) {
+        node->init = expr();
         expect(";");
-        node->cond = expr();      
+        } 
+
+        if (!consume(";")) {
+        node->cond = expr();
         expect(";");
-        node->inc = expr();       
+        }
+        
+        if (!consume(")")) {
+        node->inc = expr();
         expect(")");
+        }
         node->body = stmt(); 
         
         return node;
     }
-    
+
     if (consume_token(TK_RETURN)) {
         node = calloc(1, sizeof(Node));
         node->kind = ND_RETURN;
@@ -284,7 +307,15 @@ Node *primary() {
         return node;
     }
 
-    return new_node_num(expect_number());
+    if (token->kind == TK_NUM) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_NUM;
+        node->val = token->val;
+        token = token->next;
+        return node;
+    }
+    error_message->state = NotNumError;
+    error_at(token->str, "%s", error_message_to_string(error_message));
 }
 
 Token *consume_ident() {
@@ -320,6 +351,7 @@ void error(char *fmt, ...) {
 }
 
 bool consume_token(TokenKind kind) {
+    fprintf(stderr, "consume_token %d\n", token->kind);
     if (token->kind != kind)
         return false;
     token = token->next;
@@ -366,10 +398,6 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     tok->str = str;
     tok->len = len;
     cur->next = tok;
-    fprintf(stderr, "新しいトークン: ");
-    fprintf(stderr, "種類=%d, ", kind);
-    fprintf(stderr, "文字列=\"%.*s\", ", len, str);
-    fprintf(stderr, "長さ=%d\n", len);
     return tok;
 }
 
@@ -428,10 +456,15 @@ Token *tokenize(char *p) {
             continue;
         }     
 
-        if (startswith(p, "{") || startswith(p, "}")) {
-            cur = new_token(TK_BLOCK, cur, p++, 1);
+       if (strncmp(p, "{" , 1) == 0) {
+            cur = new_token(TK_LBRANCE, cur, p++, 1);
             continue;
-            }
+        }
+
+        if (strncmp(p, "}", 1) == 0) {
+            cur = new_token(TK_RBRANCE, cur, p++, 1);
+            continue;
+        }
 
         if (strncmp(p, "++", 2) == 0) {
             cur = new_token(TK_INC, cur, p, 2);
