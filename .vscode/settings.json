@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "ani_lang.h": "c"
+        "ani_lang.h": "c",
+        "error_message.h": "c"
     }
 }

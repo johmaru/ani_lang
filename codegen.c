@@ -70,6 +70,8 @@ void gen(Node *node){
     
     if (node->init) {
         gen(node->init);
+        printf("  pop rax\n");
+        printf("  mov [rbp-%d], rax\n", node->init->lhs->offset);
     }
     
     printf(".Lbegin%d:\n", seq);
@@ -80,9 +82,9 @@ void gen(Node *node){
         printf("  cmp rax, 0\n");
         printf("  je .Lend%d\n", seq);
     }
-        
-  if (node->body->kind == ND_BLOCK) {
-        fprintf(stderr, "forブロック処理開始\n");
+
+    if (node->body->kind == ND_BLOCK) {
+
         for (int i = 0; i < node->body->stmts->len; i++) {
             Node *stmt = vec_get(node->body->stmts, i);
             gen(stmt);
@@ -93,16 +95,21 @@ void gen(Node *node){
         }
     } else {
         gen(node->body);
-        printf("  pop rax\n");
+        if (node->body->kind != ND_RETURN) {
+            printf("  pop rax\n");
+        }
     }
 
+    
    if (node->inc) {
         gen(node->inc);
-        printf("  pop rax\n");  
+        printf("  pop rax\n"); 
+        printf("  mov [rbp-%d], rax\n", node->init->lhs->offset);
     }
     
     printf("  jmp .Lbegin%d\n", seq);
     printf(".Lend%d:\n", seq);
+    printf("  mov rax, [rbp-%d]\n", node->init->lhs->offset);
     printf("  push rax\n");
     return;}
 

@@ -107,5 +107,4 @@ void program();
 bool at_eof();
 Token *consume_ident();
 bool consume_token(TokenKind kind);
-void debug_value(int value);
 
