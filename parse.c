@@ -91,6 +91,7 @@ Node *new_node_num(int val) {
 
 Node *stmt() {
     Node *node;
+
     if (token->kind == TK_LBRANCE){
         fprintf(stderr, "TK_LBRANCE\n");
         token = token->next;
@@ -281,17 +282,37 @@ Node *unary() {
 
 Node *primary() {
 
-    if (consume("(")) {
+     if (consume("(")) {
         Node *node = expr();
         expect(")");
         return node;
     }
 
+     if (token->kind == TK_NUM) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_NUM;
+        node->val = token->val;
+        token = token->next;
+        return node;
+    }
+
+   
     Token *tok = consume_ident();
     if (tok) {
         Node *node = calloc(1, sizeof(Node));
-        node->kind = ND_LVAR;
 
+    
+     fprintf(stderr, "this str  next peek tok->str: %s tok->next->str %s\n", tok->str,tok->next->str);
+        if (peek("(")) {
+            fprintf(stderr, "primary peek tok->str: %s\n", tok->str);
+            node->kind = ND_CALL;
+            node->funcname = my_strndup(tok->str, tok->len);
+            expect("(");
+            expect(")");
+            return node;
+        }
+       
+        node->kind = ND_LVAR;
         LVar *lvar = find_lvar(tok);
         if (lvar) {
             node->offset = lvar->offset;
@@ -305,14 +326,7 @@ Node *primary() {
             locals = lvar;
         }
         return node;
-    }
-
-    if (token->kind == TK_NUM) {
-        Node *node = calloc(1, sizeof(Node));
-        node->kind = ND_NUM;
-        node->val = token->val;
-        token = token->next;
-        return node;
+       
     }
     error_message->state = NotNumError;
     error_at(token->str, "%s", error_message_to_string(error_message));
@@ -327,6 +341,14 @@ Token *consume_ident() {
     return NULL;
 }
 
+char *my_strndup(const char *s, size_t n) {
+    char *p = malloc(n + 1);
+    if (p) {
+        memcpy(p, s, n);
+        p[n] = '\0';
+    }
+    return p;
+}
 
 void error_at(char *loc, char *fmt, ...) {
     va_list ap;
@@ -355,6 +377,15 @@ bool consume_token(TokenKind kind) {
     if (token->kind != kind)
         return false;
     token = token->next;
+    return true;
+}
+
+bool peek(char *op){
+    if (token->kind != TK_RESERVED || 
+        strlen(op) != token->len || 
+        memcmp(token->str, op, token->len)) {
+        return false;
+    }
     return true;
 }
 
@@ -487,7 +518,12 @@ Token *tokenize(char *p) {
          }
 
          if ('a' <= *p && *p <= 'z') {
-             cur = new_token(TK_IDENT, cur, p++, 1);
+            char *start = p;
+            while ('a' <= *p && *p <= 'z') {
+                p++;
+            }
+            int len = p - start;
+            cur = new_token(TK_IDENT, cur, start, len);
              continue;
             }
 

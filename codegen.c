@@ -132,6 +132,23 @@ void gen(Node *node){
         return;
     }
 
+    if (node->kind == ND_CALL) {
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  and rsp, -16\n");
+
+        printf(" sub rsp, 8\n");
+        printf(" mov rax, 0\n");
+        fprintf(stderr, "node->funcname: %s\n", node->funcname);
+        printf("  call %s\n", node->funcname);
+
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+
+        printf("  push rax\n");
+        return;
+    }
+
 
     switch (node->kind)
     {

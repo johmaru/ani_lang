@@ -4,7 +4,7 @@ assert() {
     input="$2"
 
     ./ani_lang "$input" > tmp.s
-    cc -o tmp tmp.s
+    cc -o tmp tmp.s testfunc.o
     ./tmp
     actual="$?"
 
@@ -52,4 +52,5 @@ assert 10 "a=1; もし (a == 1) かえす 10;"
 assert 15 "a=0; もし(a == 0){ a=15; かえす a;}"
 assert 11 "くりかえし(a=0;a<10;++a){b=1;} かえす a + b; "
 assert 10 "a=0; ずっとループ(a<10){++a;} かえす a;"
+assert 0 "foo();"
 echo OK

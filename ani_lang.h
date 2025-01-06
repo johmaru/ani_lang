@@ -50,7 +50,7 @@ typedef enum {
     ND_FOR,
     ND_BLOCK,
     ND_INC,
-
+    ND_CALL,
 } NodeKind;
 
 typedef struct Node Node;
@@ -69,6 +69,7 @@ struct Node {
     Node *body;
     Node *next;
     Vector *stmts;
+    char *funcname;
 };
 
 typedef struct Token Token;
@@ -106,5 +107,8 @@ void error_at(char *loc, char *fmt, ...);
 void program();
 bool at_eof();
 Token *consume_ident();
+char *my_strndup(const char *s, size_t n);
 bool consume_token(TokenKind kind);
+bool peek(char *op);
+extern int foo(void);
 
