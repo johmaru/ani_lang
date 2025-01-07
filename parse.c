@@ -77,7 +77,6 @@ Node *new_node_for(Node *init, Node *cond, Node *incordec, Node *body) {
     node->kind = ND_FOR;
     node->lhs = init;
     node->cond = cond;
-    fprintf(stderr, "for incordec %d\n", incordec->kind);
     node->rhs = incordec;
     node->body = body;
     return node;
@@ -94,7 +93,6 @@ Node *stmt() {
     Node *node;
 
     if (token->kind == TK_LBRANCE){
-        fprintf(stderr, "TK_LBRANCE\n");
         token = token->next;
         node = calloc(1, sizeof(Node));
         node->kind = ND_BLOCK;
@@ -116,7 +114,6 @@ Node *stmt() {
             Node *stmt_node = stmt();
             vec_push(node->stmts, stmt_node);
         }
-        fprintf(stderr, "TK_RBRANCE\n");
         token = token->next;
         return node;
     }
@@ -318,14 +315,20 @@ Node *primary() {
     if (tok) {
         Node *node = calloc(1, sizeof(Node));
 
-    
-     fprintf(stderr, "this str  next peek tok->str: %s tok->next->str %s\n", tok->str,tok->next->str);
         if (peek("(")) {
-            fprintf(stderr, "primary peek tok->str: %s\n", tok->str);
             node->kind = ND_CALL;
+            node->args = new_vector();
             node->funcname = my_strndup(tok->str, tok->len);
-            expect("(");
+
+            consume("(");
+            if (!peek(")")) {
+                vec_push(node->args, expr());
+                while (consume(",")) {
+                    vec_push(node->args, expr());
+                }
+            }
             expect(")");
+           
             return node;
         }
        
@@ -390,7 +393,6 @@ void error(char *fmt, ...) {
 }
 
 bool consume_token(TokenKind kind) {
-    fprintf(stderr, "consume_token %d\n", token->kind);
     if (token->kind != kind)
         return false;
     token = token->next;
@@ -539,9 +541,12 @@ Token *tokenize(char *p) {
             continue;
          }
 
-         if ('a' <= *p && *p <= 'z') {
+         if ('a' <= *p && *p <= 'z' || 'A' <= *p && *p <= 'Z') {
             char *start = p;
-            while ('a' <= *p && *p <= 'z') {
+            while ('a' <= *p && *p <= 'z' || 
+                'A' <= *p && *p <= 'Z' ||
+                '0' <= *p && *p <= '9' ||
+                *p == '_') {
                 p++;
             }
             int len = p - start;
@@ -549,7 +554,7 @@ Token *tokenize(char *p) {
              continue;
             }
 
-            if (strchr("=+-*/()<>;", *p)) {
+            if (strchr("=+-*/()<>;,", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
             }

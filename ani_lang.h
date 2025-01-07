@@ -73,6 +73,7 @@ struct Node {
     Node *next;
     Vector *stmts;
     char *funcname;
+    Vector *args;
 };
 
 typedef struct Token Token;
@@ -113,5 +114,7 @@ Token *consume_ident();
 char *my_strndup(const char *s, size_t n);
 bool consume_token(TokenKind kind);
 bool peek(char *op);
-extern int foo(void);
+extern int foo();
+extern int hello();
+extern int test(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
 

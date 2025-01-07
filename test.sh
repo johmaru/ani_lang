@@ -4,7 +4,9 @@ assert() {
     input="$2"
 
     ./ani_lang "$input" > tmp.s
-    cc -o tmp tmp.s testfunc.o
+
+    echo ".section .note.GNU-stack, \"\",%progbits" >> tmp.s
+    cc -o tmp tmp.s testfunc.o -fstack-protector-strong
     ./tmp
     actual="$?"
 
@@ -55,4 +57,7 @@ assert 10 "a=0; ずっとループ(a<10){++a;} かえす a;"
 assert 0 "foo();"
 assert 0 "a=1; --a; かえす a;"
 assert 0 "くりかえし(a=10;a>0;--a)a; かえす a;"
+assert 0 "hello();"
+assert 0 "hello_args(3,5);"
+assert 139 "test(3,5,3,3,5,3,3,5,3);"
 echo OK

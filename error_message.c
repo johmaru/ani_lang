@@ -34,7 +34,11 @@ char* error_message_to_string(ErrorMessage *error_message) {
 
             case NotRbranceError:
                 return "右の括弧がないわ";
-                break;             
+                break;       
+
+            case TooManyArgumentsError:
+                return "引数が多すぎるわ";
+                break;          
             
             default:
                return "エラーがおきたみたい";

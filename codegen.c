@@ -1,6 +1,8 @@
 #include "ani_lang.h"
 #include "error_message.h"
 
+static char **argreg8;
+
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR) {
         error_message->state = NotLvarIsVariableError;
@@ -144,18 +146,42 @@ void gen(Node *node){
     }
 
     if (node->kind == ND_CALL) {
-        printf("  push rbp\n");
-        printf("  mov rbp, rsp\n");
-        printf("  and rsp, -16\n");
+        argreg8 = (char *[]){"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
-        printf(" sub rsp, 8\n");
-        printf(" mov rax, 0\n");
-        fprintf(stderr, "node->funcname: %s\n", node->funcname);
+        if (node->args->len > 6) {
+            error_message->state = TooManyArgumentsError;
+            error("%s", error_message_to_string(error_message));
+        }
+
+        if (node->args->len == 0) {
+            printf("  mov rax, 0\n");
+            printf("  call %s\n", node->funcname);
+            printf("  push rax\n");
+            return;
+        }
+
+        for (int i = node->args->len - 1; i >= 0; i--) {
+            Node *arg = vec_get(node->args, i);
+            gen(arg);
+            printf("  pop %s\n", argreg8[i]);
+        }
+        
+        int seq = labelseq++;
+        printf("  mov rax, rsp\n");
+        printf("  and rax, 15\n");
+        printf("  jnz .Lcall%d\n", seq);
+
+        printf("  mov rax, %d\n", node->args->len);
         printf("  call %s\n", node->funcname);
+        printf("  jmp .Lend%d\n", seq);
 
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-
+        printf(".Lcall%d:\n", seq);
+        printf("  sub rsp, 8\n");
+        printf("  mov rax, %d\n", node->args->len);
+        printf("  call %s\n", node->funcname);
+        printf("  add rsp, 8\n");
+        
+        printf(".Lend%d:\n", seq);
         printf("  push rax\n");
         return;
     }

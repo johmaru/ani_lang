@@ -13,6 +13,7 @@ typedef enum {
     FailTokenizeError,
     NotLvarIsVariableError,
     NotRbranceError,
+    TooManyArgumentsError,
 } ErrorState;
 
 typedef struct ErrorMessage {

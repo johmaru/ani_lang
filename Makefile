@@ -1,4 +1,5 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -fno-stack-protector
+LDFLAGS=-no-pie
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
@@ -15,6 +16,7 @@ test_func.o: testfunc.c
 	$(CC) $(CFLAGS) -c testfunc.c
 
 test: ani_lang testfunc.o
+	$(CC) -c testfunc.c
 	./test.sh
 
 clean:
