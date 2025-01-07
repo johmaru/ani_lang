@@ -72,12 +72,13 @@ Node *new_node_while(Node *cond, Node *then) {
     return node;
 }
 
-Node *new_node_for(Node *init, Node *cond, Node *inc, Node *body) {
+Node *new_node_for(Node *init, Node *cond, Node *incordec, Node *body) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_FOR;
     node->lhs = init;
     node->cond = cond;
-    node->rhs = inc;
+    fprintf(stderr, "for incordec %d\n", incordec->kind);
+    node->rhs = incordec;
     node->body = body;
     return node;
 }
@@ -155,7 +156,13 @@ Node *stmt() {
         }
         
         if (!consume(")")) {
-        node->inc = expr();
+         if (token->kind == TK_INC) {
+            node->inc = expr();
+        } else if (token->kind == TK_DEC) {
+            node->dec = expr();
+        } else {
+            node->inc = expr();
+        }
         expect(")");
         }
         node->body = stmt(); 
@@ -170,6 +177,10 @@ Node *stmt() {
     } else if (consume_token(TK_INC)) {
         node = calloc(1, sizeof(Node));
         node->kind = ND_INC;
+        node->lhs = expr();
+    } else if(consume_token(TK_DEC)){
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_DEC;
         node->lhs = expr();
     } else {
         node = expr();
@@ -270,6 +281,12 @@ Node *unary() {
     if (consume_token(TK_INC)) {
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_INC;
+        node->lhs = expr();
+        return node;
+    }
+    if (consume_token(TK_DEC)) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_DEC;
         node->lhs = expr();
         return node;
     }
@@ -502,7 +519,12 @@ Token *tokenize(char *p) {
             p += 2;
             continue;
         }
-           
+
+        if (strncmp(p, "--", 2) == 0) {
+            cur = new_token(TK_DEC, cur, p, 2);
+            p += 2;
+            continue;
+        }   
 
          if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
             cur = new_token(TK_RESERVED, cur, p, 2);

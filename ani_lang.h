@@ -29,6 +29,7 @@ typedef enum {
     TK_LBRANCE,
     TK_RBRANCE,
     TK_INC,
+    TK_DEC,
 } TokenKind;
 
 typedef enum {
@@ -50,6 +51,7 @@ typedef enum {
     ND_FOR,
     ND_BLOCK,
     ND_INC,
+    ND_DEC,
     ND_CALL,
 } NodeKind;
 
@@ -66,6 +68,7 @@ struct Node {
     Node *els;
     Node *init;
     Node *inc;
+    Node *dec;
     Node *body;
     Node *next;
     Vector *stmts;

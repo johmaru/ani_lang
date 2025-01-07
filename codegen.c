@@ -101,9 +101,10 @@ void gen(Node *node){
     }
 
     
-   if (node->inc) {
-        gen(node->inc);
-        printf("  pop rax\n"); 
+   if (node->inc || node->dec) {
+        Node *op = node->inc ? node->inc : node->dec;
+        gen(op);
+        printf("  pop rax\n");
         printf("  mov [rbp-%d], rax\n", node->init->lhs->offset);
     }
     
@@ -127,6 +128,16 @@ void gen(Node *node){
         printf("  pop rax\n");
         printf("  mov rdi, [rax]\n");
         printf("  add rdi, 1\n");
+        printf("  mov [rax], rdi\n");
+        printf("  push rdi\n");
+        return;
+    }
+
+    if (node->kind == ND_DEC) {
+        gen_lval(node->lhs);
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  sub rdi, 1\n");
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;

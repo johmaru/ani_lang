@@ -53,4 +53,6 @@ assert 15 "a=0; もし(a == 0){ a=15; かえす a;}"
 assert 11 "くりかえし(a=0;a<10;++a){b=1;} かえす a + b; "
 assert 10 "a=0; ずっとループ(a<10){++a;} かえす a;"
 assert 0 "foo();"
+assert 0 "a=1; --a; かえす a;"
+assert 0 "くりかえし(a=10;a>0;--a)a; かえす a;"
 echo OK
